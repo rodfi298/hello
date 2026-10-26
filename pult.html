@@ -1,0 +1,403 @@
+<title>Пульт Гадэм</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Rubik:wght@400;500;700&display=swap">
+<style>
+/* Layout: hardware sampler — one status strip, a speaker switch, then a 2-col grid of rubber pads. Deliberately single dark look. */
+:root {
+  --body: #17171a;
+  --panel: #222227;
+  --pad: #2d2d34;
+  --pad-edge: #0e0e10;
+  --ink: #ecebe6;
+  --muted: #8c8b93;
+  --hot: #ff5a36;
+  --live: #3ee08f;
+  --warn: #f2c14e;
+  --f-display: "Rubik Mono One", "Arial Black", system-ui, sans-serif;
+  --f-body: "Rubik", -apple-system, system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--body); color: var(--ink); }
+body {
+  font: 16px/1.4 var(--f-body);
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font: 22px/1 var(--f-display); letter-spacing: .02em; margin: 0; }
+.status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.led { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 3px #0003; }
+.led.on { background: var(--live); box-shadow: 0 0 10px var(--live); }
+.led.wait { background: var(--warn); }
+
+.speaker {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  background: var(--panel); border: 2px solid var(--pad); border-radius: 16px; padding: 14px 16px;
+  color: var(--ink); font: inherit; cursor: pointer;
+}
+.speaker .knob { flex: none; width: 46px; height: 26px; border-radius: 13px; background: var(--pad-edge); position: relative; transition: background .2s; }
+.speaker .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+.speaker[aria-pressed="true"] { border-color: var(--live); }
+.speaker[aria-pressed="true"] .knob { background: #1d5a3c; }
+.speaker[aria-pressed="true"] .knob::after { transform: translateX(20px); background: var(--live); }
+.speaker b { display: block; font-weight: 700; }
+.speaker span { display: block; font-size: 13px; color: var(--muted); }
+
+h2 { font: 11px/1 var(--f-display); letter-spacing: .12em; color: var(--muted); margin: 6px 0 -6px; }
+
+.pads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pad {
+  position: relative; min-height: 84px; padding: 14px 12px 12px; border: 0; border-radius: 14px;
+  background: var(--pad); color: var(--ink); font: 500 15px/1.2 var(--f-body); text-align: left;
+  box-shadow: inset 0 -5px 0 var(--pad-edge), 0 2px 0 #0006; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 8px;
+  transition: transform .06s, box-shadow .06s;
+}
+.pad small { font: 10px/1 var(--f-display); letter-spacing: .08em; color: var(--muted); }
+.pad::before { content: ""; position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--pad-edge); }
+.pad:active, .pad.hit { transform: translateY(3px); box-shadow: inset 0 -2px 0 var(--pad-edge); }
+.pad.hit::before { background: var(--hot); box-shadow: 0 0 8px var(--hot); }
+.pad:focus-visible, .speaker:focus-visible, .send:focus-visible, textarea:focus-visible { outline: 3px solid var(--hot); outline-offset: 2px; }
+.pad.big { grid-column: span 2; min-height: 96px; background: var(--hot); color: #1a0d08; box-shadow: inset 0 -5px 0 #a8341c, 0 2px 0 #0006; }
+.pad.big small { color: #5a1c0e; }
+.pad.big:active, .pad.big.hit { box-shadow: inset 0 -2px 0 #a8341c; }
+.pad.big span { font: 20px/1.1 var(--f-display); }
+
+.say { display: flex; gap: 10px; }
+textarea {
+  flex: 1; min-width: 0; min-height: 54px; resize: vertical; border-radius: 14px; border: 2px solid var(--pad);
+  background: var(--panel); color: var(--ink); padding: 12px 14px; font: inherit;
+}
+textarea::placeholder { color: var(--muted); }
+.send { flex: none; width: 72px; border: 0; border-radius: 14px; background: var(--ink); color: var(--body); font: 13px/1 var(--f-display); cursor: pointer; }
+.send:active { transform: translateY(2px); }
+
+.help { font-size: 13px; color: var(--muted); background: var(--panel); border-radius: 14px; padding: 14px 16px; }
+.help ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 4px; }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  max-width: calc(100% - 32px); background: var(--ink); color: var(--body); padding: 10px 16px; border-radius: 22px;
+  font-weight: 500; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+#toast.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ГАДЭМ</h1>
+    <div class="status"><i class="led wait" id="led"></i><span id="statusText">Подключаюсь…</span></div>
+  </header>
+
+  <button class="speaker" id="speakerBtn" aria-pressed="false">
+    <i class="knob"></i>
+    <div><b>Играть звук на этом устройстве</b><span>Включи на Маке. На телефоне не нужно.</span></div>
+  </button>
+
+  <h2>ФРАЗЫ</h2>
+  <div class="pads" id="phrases"></div>
+
+  <h2>ЭФФЕКТЫ</h2>
+  <div class="pads" id="fx"></div>
+
+  <h2>СВОЙ ТЕКСТ</h2>
+  <div class="say">
+    <textarea id="text" placeholder="Напиши, что сказать…" maxlength="300"></textarea>
+    <button class="send" id="sendBtn">СКАЗАТЬ</button>
+  </div>
+
+  <div class="help">
+    <b>Как пользоваться</b>
+    <ol>
+      <li>Открой эту же ссылку на Маке и включи переключатель сверху.</li>
+      <li>Открой ссылку на телефоне.</li>
+      <li>Жми кнопки на телефоне. Звук будет на Маке.</li>
+    </ol>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+const PHRASES = [
+  { id: "godamn", label: "Оууу гадэм бро", text: "Оууу, гадэм, бро!", lang: "ru", big: true },
+  { id: "godamn_en", label: "Oh god damn bro", text: "Ohhh god damn, bro!", lang: "en" },
+  { id: "krasav", label: "Ну ты красавчик", text: "Ну ты красавчик!", lang: "ru" },
+  { id: "baza", label: "Это база", text: "Это база.", lang: "ru" },
+  { id: "bruh", label: "Bruh", text: "Bruuuh.", lang: "en" },
+  { id: "letsgo", label: "Let's go!", text: "Let's gooooo!", lang: "en" },
+  { id: "shok", label: "Шок контент", text: "Шок контент!", lang: "ru" },
+];
+const FX_LIST = [
+  { id: "airhorn", label: "Дудка", tag: "AIRHORN" },
+  { id: "badum", label: "Ба-дум-тсс", tag: "DRUMS" },
+  { id: "sad", label: "Грустный тромбон", tag: "FAIL" },
+  { id: "boing", label: "Бойнг", tag: "CARTOON" },
+  { id: "siren", label: "Сирена", tag: "ALARM" },
+  { id: "claps", label: "Аплодисменты", tag: "CROWD" },
+];
+
+const $ = (id) => document.getElementById(id);
+let room = null;
+let speakerOn = false;
+let ctx = null;
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 1400);
+}
+
+// ---------- звук ----------
+function audio() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+function pickVoice(lang) {
+  const voices = speechSynthesis.getVoices();
+  const pref = lang === "ru" ? ["Milena", "Yuri", "Katya"] : ["Daniel", "Samantha", "Alex"];
+  for (const name of pref) {
+    const v = voices.find((v) => v.name.startsWith(name));
+    if (v) return v;
+  }
+  return voices.find((v) => v.lang.toLowerCase().startsWith(lang)) || null;
+}
+
+function speak(text, lang) {
+  if (!("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang === "ru" ? "ru-RU" : "en-US";
+  const v = pickVoice(lang);
+  if (v) u.voice = v;
+  u.rate = 0.95;
+  speechSynthesis.speak(u);
+}
+
+function noiseBuffer(c, seconds) {
+  const buf = c.createBuffer(1, c.sampleRate * seconds, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
+
+function env(c, node, t, attack, hold, release, peak) {
+  const g = c.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + attack);
+  g.gain.setValueAtTime(peak, t + attack + hold);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + attack + hold + release);
+  node.connect(g);
+  return g;
+}
+
+const FX = {
+  airhorn(c, out) {
+    const blasts = [[0, 0.16], [0.22, 0.16], [0.44, 0.9]];
+    for (const [start, len] of blasts) {
+      const t = c.currentTime + start;
+      const lp = c.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 2600;
+      for (const f of [466, 470, 587, 700]) {
+        const o = c.createOscillator();
+        o.type = "sawtooth"; o.frequency.setValueAtTime(f * 0.94, t); o.frequency.linearRampToValueAtTime(f, t + 0.05);
+        env(c, o, t, 0.02, len, 0.08, 0.12).connect(lp);
+        o.start(t); o.stop(t + len + 0.2);
+      }
+      lp.connect(out);
+    }
+  },
+  badum(c, out) {
+    const tom = (t, f) => {
+      const o = c.createOscillator();
+      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.5, t + 0.25);
+      env(c, o, t, 0.005, 0.02, 0.3, 0.8).connect(out);
+      o.start(t); o.stop(t + 0.4);
+    };
+    const t0 = c.currentTime;
+    tom(t0, 220); tom(t0 + 0.18, 160);
+    const n = c.createBufferSource(); n.buffer = noiseBuffer(c, 1.5);
+    const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 6000;
+    n.connect(hp);
+    env(c, hp, t0 + 0.42, 0.005, 0.02, 1.1, 0.5).connect(out);
+    n.start(t0 + 0.42);
+  },
+  sad(c, out) {
+    const notes = [[293.7, 0.45], [277.2, 0.45], [261.6, 0.45], [246.9, 1.3]];
+    let t = c.currentTime;
+    const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1100; lp.connect(out);
+    notes.forEach(([f, len], i) => {
+      const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = f;
+      if (i === notes.length - 1) {
+        const lfo = c.createOscillator(); const depth = c.createGain();
+        lfo.frequency.value = 5; depth.gain.value = 6; lfo.connect(depth).connect(o.frequency);
+        lfo.start(t); lfo.stop(t + len + 0.2);
+      }
+      env(c, o, t, 0.04, len - 0.12, 0.12, 0.3).connect(lp);
+      o.start(t); o.stop(t + len + 0.2);
+      t += len;
+    });
+  },
+  boing(c, out) {
+    const t = c.currentTime;
+    const o = c.createOscillator(); o.type = "triangle";
+    o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(520, t + 0.12);
+    o.frequency.exponentialRampToValueAtTime(300, t + 0.8);
+    const lfo = c.createOscillator(); const depth = c.createGain();
+    lfo.frequency.value = 14; depth.gain.value = 40; lfo.connect(depth).connect(o.frequency);
+    env(c, o, t, 0.01, 0.1, 0.8, 0.6).connect(out);
+    o.start(t); lfo.start(t); o.stop(t + 1); lfo.stop(t + 1);
+  },
+  siren(c, out) {
+    const t = c.currentTime;
+    const o = c.createOscillator(); o.type = "square";
+    for (let i = 0; i < 4; i++) {
+      o.frequency.setValueAtTime(600, t + i * 0.6);
+      o.frequency.linearRampToValueAtTime(1100, t + i * 0.6 + 0.3);
+      o.frequency.linearRampToValueAtTime(600, t + i * 0.6 + 0.6);
+    }
+    const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1800;
+    o.connect(lp);
+    env(c, lp, t, 0.05, 2.25, 0.1, 0.18).connect(out);
+    o.start(t); o.stop(t + 2.5);
+  },
+  claps(c, out) {
+    const t0 = c.currentTime;
+    const buf = noiseBuffer(c, 0.2);
+    for (let i = 0; i < 70; i++) {
+      const t = t0 + Math.random() * 2.2;
+      const n = c.createBufferSource(); n.buffer = buf;
+      const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 900 + Math.random() * 1600; bp.Q.value = 1.2;
+      n.connect(bp);
+      const fade = 1 - (t - t0) / 2.6;
+      env(c, bp, t, 0.002, 0.005, 0.09, 0.5 * fade).connect(out);
+      n.start(t); n.stop(t + 0.15);
+    }
+  },
+};
+
+function playFx(id) {
+  const c = audio();
+  const out = c.createGain(); out.gain.value = 0.9; out.connect(c.destination);
+  FX[id](c, out);
+}
+
+// Сюда приходит всё: и с телефона, и своё
+function perform(data) {
+  if (!data || typeof data !== "object") return;
+  if (data.k === "fx" && Object.hasOwn(FX, data.id)) {
+    playFx(data.id);
+  } else if (data.k === "say" && typeof data.text === "string") {
+    const text = data.text.slice(0, 300).trim();
+    if (text) speak(text, data.lang === "en" ? "en" : "ru");
+  }
+}
+
+function flashPad(btn) {
+  btn.classList.add("hit");
+  setTimeout(() => btn.classList.remove("hit"), 220);
+  if (navigator.vibrate) navigator.vibrate(15);
+}
+
+async function send(data, label) {
+  if (room && room.connected()) {
+    try {
+      await room.emit("play", data);
+      toast(speakerOn ? label : label + " → на колонку");
+      return;
+    } catch (e) {
+      // ниже сыграем тут
+    }
+  }
+  perform(data);
+  toast(label + " (тут, нет связи)");
+}
+
+// ---------- кнопки ----------
+for (const p of PHRASES) {
+  const b = document.createElement("button");
+  b.className = "pad" + (p.big ? " big" : "");
+  b.innerHTML = `<small>${p.lang === "ru" ? "ГОЛОС RU" : "VOICE EN"}</small><span></span>`;
+  b.querySelector("span").textContent = p.label;
+  b.onclick = () => { flashPad(b); send({ k: "say", text: p.text, lang: p.lang }, "🗣 " + p.label); };
+  $("phrases").appendChild(b);
+}
+for (const f of FX_LIST) {
+  const b = document.createElement("button");
+  b.className = "pad";
+  b.innerHTML = `<small>${f.tag}</small><span></span>`;
+  b.querySelector("span").textContent = f.label;
+  b.onclick = () => { flashPad(b); send({ k: "fx", id: f.id }, "🔊 " + f.label); };
+  $("fx").appendChild(b);
+}
+
+$("sendBtn").onclick = () => {
+  const text = $("text").value.trim();
+  if (!text) return;
+  const lang = /[а-яё]/i.test(text) ? "ru" : "en";
+  send({ k: "say", text, lang }, "🗣 " + text);
+  $("text").value = "";
+};
+$("text").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("sendBtn").click(); }
+});
+
+$("speakerBtn").onclick = () => {
+  speakerOn = !speakerOn;
+  $("speakerBtn").setAttribute("aria-pressed", String(speakerOn));
+  if (speakerOn) {
+    // браузер даёт звук только после нажатия — разблокируем сейчас
+    audio();
+    speak("Колонка включена", "ru");
+    toast("Колонка включена");
+  } else {
+    toast("Колонка выключена");
+  }
+  if (room) room.presence({ speaker: speakerOn }).catch(() => {});
+  renderStatus();
+};
+
+// ---------- связь ----------
+function renderStatus() {
+  const led = $("led"), txt = $("statusText");
+  if (!room) {
+    led.className = "led";
+    txt.textContent = "Без связи: звук только тут";
+    return;
+  }
+  if (!room.connected()) {
+    led.className = "led wait";
+    txt.textContent = "Подключаюсь…";
+    return;
+  }
+  const speakers = room.peers().filter((p) => p.presence && p.presence.speaker === true).length;
+  led.className = speakers ? "led on" : "led wait";
+  txt.textContent = speakers ? `Колонок онлайн: ${speakers}` : "Колонка не включена";
+}
+
+if ("speechSynthesis" in window) speechSynthesis.getVoices();
+
+(async () => {
+  try {
+    room = await window.claude?.use("room");
+  } catch (e) {
+    room = null;
+  }
+  if (!room) { renderStatus(); return; }
+  const dead = () => { room = null; renderStatus(); };
+  room.on("play", (msg) => { if (speakerOn) perform(msg.data); }, dead);
+  room.onPeers(renderStatus, dead);
+  room.onConnection(renderStatus, dead);
+  room.presence({ speaker: speakerOn }).catch(() => {});
+  renderStatus();
+})();
+renderStatus();
+</script>
