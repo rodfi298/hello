@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Саундборд</title>
+<style>
+  :root { --bg: #111; --card: #1e1e22; --text: #f2f2f2; --muted: #888; --accent: #ff4d6d; --accent2: #4dabff; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, system-ui, sans-serif;
+         padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  h1 { font-size: 22px; margin: 4px 0 16px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 24px 0 8px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  button { border: 0; border-radius: 14px; padding: 18px 10px; font: inherit; font-weight: 600; color: var(--text);
+           background: var(--card); cursor: pointer; transition: transform .08s, background .15s; }
+  button:active { transform: scale(.95); background: #2c2c33; }
+  button.sound { background: #1d2733; }
+  button.flash { background: var(--accent); }
+  .row { display: flex; gap: 8px; }
+  textarea, select, input { width: 100%; border: 1px solid #333; border-radius: 12px; padding: 12px; font: inherit;
+           background: var(--card); color: var(--text); }
+  textarea { min-height: 70px; resize: vertical; }
+  .say { background: var(--accent); width: 100%; margin-top: 8px; }
+  .stop { background: #333; width: 100%; margin-top: 24px; }
+  label { font-size: 13px; color: var(--muted); display: block; margin: 8px 0 4px; }
+  #status { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+            background: #000c; padding: 8px 14px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; }
+  #status.show { opacity: 1; }
+  .empty { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>🎛 Саундборд</h1>
+
+<h2>Свой текст</h2>
+<textarea id="text" placeholder="Напиши что сказать Маку…"></textarea>
+<div class="row">
+  <div style="flex:2"><label for="voice">Голос</label><select id="voice"></select></div>
+  <div style="flex:1"><label for="rate">Скорость</label><input id="rate" type="number" value="180" min="80" max="400" step="10"></div>
+</div>
+<button class="say" id="sayBtn">🗣 Сказать</button>
+
+<h2>Фразы</h2>
+<div class="grid" id="presets"></div>
+
+<h2>Звуки</h2>
+<div class="grid" id="sounds"></div>
+
+<button class="stop" id="stopBtn">⏹ Стоп</button>
+<div id="status"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let pin = '';
+try { pin = localStorage.getItem('pin') || ''; } catch {}
+
+function toast(msg) {
+  const s = $('status');
+  s.textContent = msg;
+  s.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => s.classList.remove('show'), 1200);
+}
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'Content-Type': 'application/json', 'X-Pin': pin },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) {
+    pin = prompt('PIN') || '';
+    try { localStorage.setItem('pin', pin); } catch {}
+    return api(path, body);
+  }
+  return res.json();
+}
+
+function flash(btn) {
+  btn.classList.add('flash');
+  setTimeout(() => btn.classList.remove('flash'), 250);
+  if (navigator.vibrate) navigator.vibrate(20);
+}
+
+async function load() {
+  const cfg = await api('/api/config');
+
+  const sel = $('voice');
+  const voices = cfg.voices.length ? cfg.voices : ['Milena'];
+  sel.innerHTML = voices.map((v) => `<option>${v}</option>`).join('');
+  sel.value = voices.includes('Milena') ? 'Milena' : voices[0];
+
+  $('presets').innerHTML = '';
+  for (const p of cfg.presets) {
+    const b = document.createElement('button');
+    b.textContent = p.label;
+    b.onclick = () => { flash(b); api('/api/say', p); toast('🗣 ' + p.label); };
+    $('presets').appendChild(b);
+  }
+
+  $('sounds').innerHTML = cfg.sounds.length ? '' : '<div class="empty">Закинь mp3/wav в папку sounds/ на Маке и обнови страницу</div>';
+  for (const name of cfg.sounds) {
+    const b = document.createElement('button');
+    b.className = 'sound';
+    b.textContent = '🔊 ' + name.replace(/\.[^.]+$/, '');
+    b.onclick = () => { flash(b); api('/api/play', { name }); toast('🔊 ' + name); };
+    $('sounds').appendChild(b);
+  }
+}
+
+$('sayBtn').onclick = () => {
+  const text = $('text').value.trim();
+  if (!text) return;
+  flash($('sayBtn'));
+  api('/api/say', { text, voice: $('voice').value, rate: $('rate').value });
+  toast('🗣 ' + text);
+};
+$('text').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('sayBtn').click(); }
+});
+$('stopBtn').onclick = () => { api('/api/stop', {}); toast('⏹ Тишина'); };
+
+load().catch(() => toast('Нет связи с Маком'));
+</script>
+</body>
+</html>
