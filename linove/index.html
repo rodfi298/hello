@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linove — контент-план</title>
+<style>
+  :root {
+    --bg: #fafaf9; --panel: #fff; --text: #1c1917; --muted: #78716c; --line: #e7e5e4;
+    --accent: #1c1917; --good: #15803d; --good-bg: #dcfce7; --bad: #b91c1c; --bad-bg: #fee2e2;
+    --maybe: #a16207; --maybe-bg: #fef9c3; --chip: #f5f5f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0a09; --panel: #1c1917; --text: #f5f5f4; --muted: #a8a29e; --line: #292524;
+      --accent: #f5f5f4; --good: #4ade80; --good-bg: #14532d; --bad: #f87171; --bad-bg: #450a0a;
+      --maybe: #facc15; --maybe-bg: #422006; --chip: #292524;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 16px; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .sync { font-size: 12px; color: var(--muted); }
+  .sp { flex: 1; }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  .bar input[type=search] { flex: 1; min-width: 180px; }
+  .bar input, .bar select { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 10px; }
+  .stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .stats b { color: var(--text); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em;
+    padding: 8px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 1; }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr.week td { background: var(--chip); font-size: 12px; font-weight: 600; color: var(--muted); padding: 6px 10px; }
+  tr.done td:not(.ctl) { opacity: .55; }
+  tr.bad td:not(.ctl) .title { text-decoration: line-through; }
+  .e { width: 100%; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 4px 6px; resize: none; overflow: hidden; display: block; }
+  .e:hover { border-color: var(--line); }
+  .e:focus { outline: none; border-color: var(--muted); background: var(--bg); }
+  textarea.e { min-height: 28px; line-height: 1.4; }
+  .title { font-weight: 600; }
+  input[type=date].e { width: 128px; }
+  select.e { cursor: pointer; padding: 4px 2px; }
+  .proc { width: 150px; }
+  .rate { display: flex; gap: 2px; }
+  .rate button { border: 1px solid var(--line); background: transparent; border-radius: 6px; width: 30px; height: 28px; cursor: pointer; font-size: 13px; line-height: 1; filter: grayscale(1); opacity: .45; }
+  .rate button.on { filter: none; opacity: 1; }
+  .rate button.on.g { background: var(--good-bg); border-color: var(--good); }
+  .rate button.on.m { background: var(--maybe-bg); border-color: var(--maybe); }
+  .rate button.on.b { background: var(--bad-bg); border-color: var(--bad); }
+  .st { border-radius: 999px !important; font-size: 12px; padding: 3px 8px !important; border: 1px solid var(--line) !important; }
+  .st[data-v="idea"] { background: var(--chip); }
+  .st[data-v="plan"] { background: #e0e7ff; color: #3730a3; }
+  .st[data-v="shot"] { background: var(--maybe-bg); color: var(--maybe); }
+  .st[data-v="edit"] { background: #fae8ff; color: #86198f; }
+  .st[data-v="posted"] { background: var(--good-bg); color: var(--good); }
+  @media (prefers-color-scheme: dark) {
+    .st[data-v="plan"] { background: #1e1b4b; color: #a5b4fc; }
+    .st[data-v="edit"] { background: #4a044e; color: #f0abfc; }
+  }
+  .c-title { width: 20%; } .c-shot { width: 32%; }
+  .ctl { width: 30px; text-align: center; }
+  .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 16px; opacity: .4; }
+  .del:hover { opacity: 1; color: var(--bad); }
+  .empty { padding: 30px; text-align: center; color: var(--muted); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+  /* Телефон: строки превращаются в карточки */
+  @media (max-width: 820px) {
+    table, tbody, tr, td { display: block; width: 100%; }
+    thead { display: none; }
+    table { border: 0; background: transparent; }
+    tr.item { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; padding: 6px; display: grid;
+      grid-template-columns: 1fr 1fr; gap: 2px 6px; }
+    tr.item td { border: 0; padding: 2px; }
+    tr.item td.c-title, tr.item td.c-shot, tr.item td.c-notes { grid-column: 1 / -1; }
+    tr.item td.ctl { grid-column: 2; text-align: right; }
+    tr.item td[data-l]::before { content: attr(data-l); display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; padding-left: 6px; }
+    tr.week { display: block; margin: 14px 0 6px; }
+    tr.week td { background: transparent; padding: 0 4px; }
+    input[type=date].e, .proc { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Linove · контент-план</h1>
+    <span class="sync" id="sync">загрузка…</span>
+    <span class="sp"></span>
+    <button class="btn" id="exportBtn" title="Скачать CSV для Excel / Google Sheets">CSV</button>
+    <button class="btn primary" id="addBtn">+ Идея</button>
+  </header>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="Поиск по идеям, процедурам, заметкам…">
+    <select id="fRate">
+      <option value="">Любая оценка</option>
+      <option value="good">👍 Хорошие</option>
+      <option value="maybe">🤔 Подумать</option>
+      <option value="bad">👎 Плохие</option>
+      <option value="none">Без оценки</option>
+      <option value="notbad">Всё, кроме плохих</option>
+    </select>
+    <select id="fStatus"></select>
+    <select id="fProc"></select>
+  </div>
+  <div class="stats" id="stats"></div>
+
+  <table>
+    <thead><tr>
+      <th>Дата</th><th>Процедура</th><th>Идея</th><th>Формат</th><th>Что снять / хук</th><th>Оценка</th><th>Статус</th><th>Заметки</th><th></th>
+    </tr></thead>
+    <tbody id="tb"></tbody>
+  </table>
+  <div class="hint">Всё сохраняется автоматически и видно всем, у кого есть ссылка. Без даты — попадает в «Банк идей» внизу.</div>
+</div>
+
+<script>
+const STATUSES = [
+  ['idea', 'Идея'], ['plan', 'В плане'], ['shot', 'Снято'], ['edit', 'Монтаж'], ['posted', 'Опубликовано'],
+];
+const FORMATS = ['Reels', 'Stories', 'Карусель', 'TikTok', 'Пост'];
+const PROCS = [
+  'Fotona 4D', 'SmoothEye', 'StarWalker (тату/ПМ)', 'Лазерная эпиляция', 'IPL M22', 'Hydrafacial', 'ICOONE Laser Med',
+  'Ботокс', 'Radiesse', 'Полинуклеотиды', 'Дерматолог / родинки', 'УЗИ', 'Клиника / команда', 'Общее / уход',
+];
+
+// Стартовый план: ноябрь 2026. Процедуры — с linove.eu, акценты под сезон (осень = сезон лазеров, Black Friday, подарки к Рождеству).
+const SEED = [
+  ['2026-11-02', 'Клиника / команда', 'Один день в Linove за 30 секунд', 'Reels', 'Быстрые склейки: дверь → ресепшн → кабинеты → аппараты → врач машет в камеру. Хук: «Где в Риге делают Fotona 4D? Показываем изнутри»'],
+  ['2026-11-03', 'Hydrafacial', 'Банка с «грязью» после Hydrafacial', 'Reels', 'Классика, которая всегда залетает: процесс крупно → в конце показываем банку с тем, что вышло из пор. Хук: «Это вышло из ОДНОГО лица»'],
+  ['2026-11-04', 'Общее / уход', 'Осень = сезон лазеров. Почему именно сейчас', 'Карусель', 'Слайды: меньше солнца → меньше риск пигмента → курс эпиляции/IPL успевает к лету. CTA: запись на консультацию'],
+  ['2026-11-05', 'Дерматолог / родинки', 'Правило ABCDE: когда родинку пора показать врачу', 'Reels', 'Dr. Linova на камеру, на экране буквы A-B-C-D-E + дерматоскоп крупным планом. Хук: «5 признаков, что родинку нельзя игнорировать»'],
+  ['2026-11-06', 'Fotona 4D', 'Лифтинг без иголок: 4 режима Fotona 4D', 'Reels', 'GRWM-формат клиентки: приходит → 4 этапа (подписи на экране) → лицо сразу после. Хук: «45 минут и никаких уколов»'],
+  ['2026-11-09', 'Лазерная эпиляция', '3 мифа о лазерной эпиляции', 'Reels', 'Врач/косметолог «разбивает» мифы: больно? вредно? навсегда? — по 5 сек на миф, звук «ошибка»'],
+  ['2026-11-10', 'StarWalker (тату/ПМ)', 'Как исчезает тату: замедленная съёмка', 'Reels', 'Slow-mo вспышки и «побеление» тату (frost-эффект). Без лица, только рука. Хук: «Вот что происходит с татуировкой под лазером»'],
+  ['2026-11-11', 'ICOONE Laser Med', 'Что это за костюм космонавта?', 'Reels', 'Юмор: клиентка в костюме ICOONE, подпись «когда сказали, что это процедура для тела». Потом коротко — что делает аппарат'],
+  ['2026-11-12', 'Общее / уход', 'Дерматолог оценивает косметику из Drogas', 'Reels', 'Тренд «rate my…»: 5 популярных средств с полки Drogas/Rimi, оценка 1-10 и почему. Локально и цепляет'],
+  ['2026-11-13', 'IPL M22', 'Пигмент после лета — что с ним делать в ноябре', 'Карусель', 'До/после IPL (с согласия), что такое фотоомоложение, сколько сеансов. Слайд с ценой'],
+  ['2026-11-16', 'Ботокс', 'Ботокс: будет ли заметно? Натуральный результат', 'Reels', 'Мимика до (поднять брови, нахмуриться) и через 2 недели. Хук: «Угадайте, кто сделал ботокс»'],
+  ['2026-11-17', 'Клиника / команда', 'Угадай процедуру по звуку', 'Stories', 'ASMR-игра: звук лазера, Hydrafacial, ICOONE — опрос в сторис «что это?», ответ в следующей'],
+  ['2026-11-18', 'Клиника / команда', '18 ноября — поздравление с Днём провозглашения Латвии', 'Stories', 'Короткое поздравление команды, без продаж. LV + RU подписи'],
+  ['2026-11-19', 'Полинуклеотиды', 'ДНК лосося в косметологии — правда или маркетинг?', 'Reels', 'Врач объясняет за 30 сек: что это, кому подходит, чем отличается от биоревитализации. Хук-вопрос в начале'],
+  ['2026-11-20', 'SmoothEye', 'Уставшие глаза от экранов: SmoothEye', 'Reels', 'Клиентка-офисник, крупно зона глаз, процесс + через неделю. Хук: «Если вы 8 часов в ноутбуке — это для вас»'],
+  ['2026-11-23', 'Hydrafacial', 'Express vs Deluxe vs Platinum — в чём разница', 'Карусель', 'Сравнительная табличка: этапы, время, цена, кому. Можно добавить бустер JLO Beauty как «премиум-опцию»'],
+  ['2026-11-24', 'Общее / уход', 'SPF в ноябре в Риге — нужен?', 'Reels', 'Уличный опрос/стрит-формат у клиники: «вы носите SPF зимой?» → врач отвечает. Локальный хук'],
+  ['2026-11-25', 'Radiesse', 'Филлер, который запускает свой коллаген', 'Reels', 'Объяснение на анимации/рисунке маркером + процесс. Отличие от гиалуронки'],
+  ['2026-11-26', 'Общее / уход', 'Black Friday — анонс предложения', 'Stories', 'Тизер + в пятницу пост с условиями (сертификаты / пакеты Hydrafacial 3/5 сеансов). Согласовать скидки'],
+  ['2026-11-27', 'Общее / уход', 'Black Friday — пост с условиями', 'Пост', 'Что входит, сроки, как записаться. Дублировать в сторис со ссылкой'],
+  ['2026-11-30', 'Общее / уход', 'Подарочный сертификат к Рождеству', 'Reels', 'Красивая упаковка сертификата, вручение «сюрприз». Хук: «Подарок, который точно не передарят»'],
+  ['', 'Дерматолог / родинки', 'Dr. Linova: блиц из 10 вопросов', 'Reels', 'Быстрые вопросы за кадром, короткие ответы. Знакомство с врачом, доверие'],
+  ['', 'Клиника / команда', 'Что на столе у косметолога', 'Reels', 'Тренд «what’s in my bag» — раскладываем инструменты/косметику по столу с подписями'],
+  ['', 'Лазерная эпиляция', 'Почему курс эпиляции начинают зимой', 'Reels', '6-8 сеансов с интервалом → начинаешь в ноябре, к лету готово. Таймлайн на экране'],
+  ['', 'УЗИ', 'Не только эстетика: УЗИ в Linove', 'Карусель', 'Какие исследования делаете, кому и когда нужно. Расширяет образ клиники как медицинской'],
+  ['', 'Клиника / команда', 'Отзыв клиентки на выходе из кабинета', 'Reels', 'Честное мини-интервью сразу после процедуры, 2-3 вопроса. Серия раз в неделю'],
+  ['', 'Ботокс', 'Ожидание vs реальность после ботокса', 'Reels', 'Юмор: «ожидание» — отёк как в мемах, «реальность» — клиентка сразу идёт пить кофе'],
+  ['', 'Общее / уход', 'Ответы дерматолога на комментарии', 'Reels', 'Формат «отвечаю на комментарий» — вопрос из комментов поверх видео. Копить вопросы из Q&A в сторис'],
+  ['', 'Общее / уход', '3 ошибки ухода за кожей осенью', 'Карусель', 'Горячий душ, нет увлажнения, забыли SPF. Простой образовательный пост для сохранений'],
+  ['', 'Hydrafacial', 'Hydrafacial не только для лица — руки и тело', 'Reels', 'Неожиданный ракурс: процедура на руках/спине. Хук: «Да, так тоже можно»'],
+  ['', 'Fotona 4D', 'Fotona 4D: что чувствуешь во время процедуры', 'Stories', 'Клиентка рассказывает ощущения по этапам, опрос «хотели бы попробовать?»'],
+];
+
+let items = [];
+let mode = 'remote';     // 'remote' — общий сервер; 'local' — только этот браузер (если сервер недоступен)
+let lastUpdated = 0;
+let busy = 0;
+const LS = 'linove-plan-v1';
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const seedItems = () => SEED.map(([date, proc, title, format, shot]) => ({ id: uid(), date, proc, title, format, shot, rate: '', status: 'idea', notes: '' }));
+
+function setSync(t) { $('#sync').textContent = t; }
+
+async function api(method, body) {
+  const r = await fetch('/api/data', { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function load() {
+  try {
+    const d = await api('GET');
+    if (!d.items) {
+      const s = await api('POST', { type: 'replace', items: seedItems() });
+      items = s.items; lastUpdated = s.updatedAt;
+    } else { items = d.items; lastUpdated = d.updatedAt; }
+    mode = 'remote'; setSync('синхронизировано');
+  } catch {
+    mode = 'local';
+    try { items = JSON.parse(localStorage.getItem(LS)) || seedItems(); } catch { items = seedItems(); }
+    setSync('офлайн: сохраняется только в этом браузере');
+  }
+  render();
+}
+
+let queue = Promise.resolve();
+function send(op) {
+  if (mode === 'local') { try { localStorage.setItem(LS, JSON.stringify(items)); } catch {} return; }
+  busy++; setSync('сохраняю…');
+  queue = queue.then(() => api('POST', op)).then((s) => { lastUpdated = s.updatedAt; setSync('сохранено'); })
+    .catch(() => setSync('⚠ не сохранилось — проверь интернет'))
+    .finally(() => { busy--; });
+}
+
+// Подтягиваем чужие правки, если сейчас никто ничего не редактирует на этой странице
+setInterval(async () => {
+  if (mode !== 'remote' || busy || document.activeElement?.closest('#tb')) return;
+  try {
+    const d = await api('GET');
+    if (d.items && d.updatedAt > lastUpdated) { items = d.items; lastUpdated = d.updatedAt; render(); setSync('обновлено'); }
+  } catch {}
+}, 15000);
+
+function update(id, patch) {
+  const it = items.find((x) => x.id === id);
+  Object.assign(it, patch);
+  send({ type: 'upsert', item: it });
+}
+
+const opts = (list, v) => list.map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
+const pair = (a) => a.map((x) => [x, x]);
+
+function weekLabel(d) {
+  const dt = new Date(d + 'T12:00:00');
+  const mon = new Date(dt); mon.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const f = (x) => x.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  return [mon.toISOString().slice(0, 10), `Неделя ${f(mon)} — ${f(sun)}`];
+}
+
+function filtered() {
+  const q = $('#q').value.trim().toLowerCase(), fr = $('#fRate').value, fs = $('#fStatus').value, fp = $('#fProc').value;
+  return items.filter((it) => {
+    if (q && ![it.title, it.proc, it.shot, it.notes, it.format].join(' ').toLowerCase().includes(q)) return false;
+    if (fr === 'none' ? it.rate : fr === 'notbad' ? it.rate === 'bad' : fr && it.rate !== fr) return false;
+    if (fs && it.status !== fs) return false;
+    if (fp && it.proc !== fp) return false;
+    return true;
+  });
+}
+
+function row(it) {
+  const procs = PROCS.includes(it.proc) || !it.proc ? PROCS : [...PROCS, it.proc];
+  const fmts = FORMATS.includes(it.format) || !it.format ? FORMATS : [...FORMATS, it.format];
+  const cls = ['item', it.status === 'posted' && 'done', it.rate === 'bad' && 'bad'].filter(Boolean).join(' ');
+  return `<tr class="${cls}" data-id="${it.id}">
+    <td data-l="Дата"><input class="e" type="date" data-k="date" value="${esc(it.date)}"></td>
+    <td data-l="Процедура"><select class="e proc" data-k="proc"><option value="">—</option>${opts(pair(procs), it.proc)}<option value="__new">+ своя…</option></select></td>
+    <td class="c-title" data-l="Идея"><textarea class="e title" rows="1" data-k="title" placeholder="Название идеи">${esc(it.title)}</textarea></td>
+    <td data-l="Формат"><select class="e" data-k="format"><option value="">—</option>${opts(pair(fmts), it.format)}</select></td>
+    <td class="c-shot" data-l="Что снять / хук"><textarea class="e" rows="1" data-k="shot" placeholder="Сценарий, кадры, хук">${esc(it.shot)}</textarea></td>
+    <td data-l="Оценка"><div class="rate">
+      <button class="g${it.rate === 'good' ? ' on' : ''}" data-rate="good" title="Хорошая идея">👍</button>
+      <button class="m${it.rate === 'maybe' ? ' on' : ''}" data-rate="maybe" title="Подумать">🤔</button>
+      <button class="b${it.rate === 'bad' ? ' on' : ''}" data-rate="bad" title="Плохая идея">👎</button>
+    </div></td>
+    <td data-l="Статус"><select class="e st" data-k="status" data-v="${esc(it.status)}">${opts(STATUSES, it.status)}</select></td>
+    <td class="c-notes" data-l="Заметки"><textarea class="e" rows="1" data-k="notes" placeholder="…">${esc(it.notes)}</textarea></td>
+    <td class="ctl"><button class="del" title="Удалить">×</button></td>
+  </tr>`;
+}
+
+function render() {
+  const list = filtered().slice().sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+  let html = '', lastWeek = null, bankShown = false;
+  for (const it of list) {
+    if (it.date) {
+      const [wk, label] = weekLabel(it.date);
+      if (wk !== lastWeek) { html += `<tr class="week"><td colspan="9">${label}</td></tr>`; lastWeek = wk; }
+    } else if (!bankShown) { html += `<tr class="week"><td colspan="9">Банк идей (без даты)</td></tr>`; bankShown = true; }
+    html += row(it);
+  }
+  $('#tb').innerHTML = html || `<tr><td colspan="9" class="empty">Ничего не найдено</td></tr>`;
+  document.querySelectorAll('#tb textarea').forEach(grow);
+
+  const c = (f) => items.filter(f).length;
+  $('#stats').innerHTML = [
+    `Всего <b>${items.length}</b>`,
+    `👍 <b>${c((x) => x.rate === 'good')}</b>`, `🤔 <b>${c((x) => x.rate === 'maybe')}</b>`, `👎 <b>${c((x) => x.rate === 'bad')}</b>`,
+    ...STATUSES.map(([k, l]) => `${l} <b>${c((x) => x.status === k)}</b>`),
+  ].join('');
+}
+
+function grow(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+
+// Фильтры
+$('#fStatus').innerHTML = `<option value="">Любой статус</option>` + opts(STATUSES);
+$('#fProc').innerHTML = `<option value="">Все процедуры</option>` + opts(pair(PROCS));
+['#q', '#fRate', '#fStatus', '#fProc'].forEach((s) => $(s).addEventListener('input', render));
+
+// Редактирование
+const tb = $('#tb');
+tb.addEventListener('input', (e) => { if (e.target.tagName === 'TEXTAREA') grow(e.target); });
+tb.addEventListener('change', (e) => {
+  const el = e.target, tr = el.closest('tr[data-id]'); if (!tr || !el.dataset.k) return;
+  let v = el.value;
+  if (el.dataset.k === 'proc' && v === '__new') {
+    v = (prompt('Название процедуры / рубрики') || '').trim();
+    if (!v) { render(); return; }
+  }
+  update(tr.dataset.id, { [el.dataset.k]: v });
+  if (['date', 'status', 'proc'].includes(el.dataset.k)) render();
+});
+tb.addEventListener('click', (e) => {
+  const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+  const id = tr.dataset.id;
+  const rb = e.target.closest('[data-rate]');
+  if (rb) {
+    const it = items.find((x) => x.id === id);
+    update(id, { rate: it.rate === rb.dataset.rate ? '' : rb.dataset.rate });
+    render();
+  }
+  if (e.target.closest('.del')) {
+    const it = items.find((x) => x.id === id);
+    if (!confirm(`Удалить «${it.title || 'без названия'}»?`)) return;
+    items = items.filter((x) => x.id !== id);
+    send({ type: 'delete', id });
+    render();
+  }
+});
+
+$('#addBtn').addEventListener('click', () => {
+  const it = { id: uid(), date: '', proc: '', title: '', format: 'Reels', shot: '', rate: '', status: 'idea', notes: '' };
+  items.push(it);
+  send({ type: 'upsert', item: it });
+  ['#q', '#fRate', '#fStatus', '#fProc'].forEach((s) => ($(s).value = ''));
+  render();
+  const t = tb.querySelector(`tr[data-id="${it.id}"] .title`);
+  t.scrollIntoView({ block: 'center' }); t.focus();
+});
+
+$('#exportBtn').addEventListener('click', () => {
+  const cols = ['date', 'proc', 'title', 'format', 'shot', 'rate', 'status', 'notes'];
+  const head = ['Дата', 'Процедура', 'Идея', 'Формат', 'Что снять', 'Оценка', 'Статус', 'Заметки'];
+  const st = Object.fromEntries(STATUSES), rt = { good: 'хорошо', maybe: 'подумать', bad: 'плохо' };
+  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [head.map(cell).join(';'), ...items.map((it) => cols.map((k) => cell(k === 'status' ? st[it[k]] : k === 'rate' ? rt[it[k]] : it[k])).join(';'))];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv' }));
+  a.download = 'linove-content-plan.csv'; a.click();
+});
+
+load();
+</script>
+</body>
+</html>
