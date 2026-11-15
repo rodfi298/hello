@@ -1,0 +1,225 @@
+<title>GTA 6 Shorts Pack</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky toolbar with countdown + phase filter, then one column of short cards; each card = copy row on top, editable fields below */
+:root{
+  --bg:#f2f4f5; --surface:#ffffff; --line:#dde3e6; --fg:#14191c; --muted:#5d6a71;
+  --accent:#e0365f; --accent-ink:#ffffff; --teal:#0d7f86; --warn:#b86a00; --warn-bg:#fff3df; --ok:#1d8a4e; --ok-bg:#e2f5ea;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1417; --surface:#172025; --line:#263239; --fg:#e8eef0; --muted:#93a3ab;
+  --accent:#ff5a80; --accent-ink:#1a0710; --teal:#3cc3c9; --warn:#ffb54a; --warn-bg:#33270f; --ok:#5fd896; --ok-bg:#123222; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1417; --surface:#172025; --line:#263239; --fg:#e8eef0; --muted:#93a3ab;
+  --accent:#ff5a80; --accent-ink:#1a0710; --teal:#3cc3c9; --warn:#ffb54a; --warn-bg:#33270f; --ok:#5fd896; --ok-bg:#123222; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:880px;margin:0 auto;padding-block:24px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,40px);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.stats{display:flex;flex-wrap:wrap;gap:10px 22px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.stats b{color:var(--fg);font-weight:500;font-size:20px;font-variant-numeric:tabular-nums;display:block}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:600 13px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:6px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.spacer{flex:1}
+.btn{font:700 13px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--fg)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+details.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+details.panel summary{cursor:pointer;font-weight:700}
+.panel-body{display:grid;gap:12px;margin-top:12px}
+.tips{margin:12px 0 0;padding-left:18px;display:grid;gap:6px;max-width:70ch}
+label.f{display:grid;gap:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+input[type=text],textarea{width:100%;font:15px/1.45 var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-transform:none;letter-spacing:0}
+textarea{resize:vertical;min-height:70px}
+.list{display:grid;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:10px;min-width:0}
+.card.done{opacity:.6}
+.card.focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.num{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.phase{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--teal)}
+.status{margin-left:auto;font:700 12px var(--body);padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer}
+.status[data-s="1"]{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.status[data-s="2"]{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.idea{font-size:14px;color:var(--muted);margin:0}
+.idea b{color:var(--fg)}
+.titlerow{display:grid;gap:4px}
+.title-in{font-weight:700;font-size:16px}
+.meta{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.meta .bad{color:var(--accent)}
+.holes{color:var(--warn);font-family:var(--body);font-weight:600}
+.copies{display:flex;flex-wrap:wrap;gap:6px}
+.card details summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
+.card details[open] summary{margin-bottom:8px}
+.inner{display:grid;gap:10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;max-width:calc(100% - 32px);z-index:20}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+@media (prefers-reduced-motion:no-preference){.card{transition:box-shadow .2s,border-color .2s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>GTA 6 Shorts <em>Pack</em></h1>
+    <p class="lede">Готовые названия, описания и теги для первых шортсов. Поля в [скобках] заполни, когда увидишь игру. Нажал «Копировать», вставил в YouTube, отметил «Загружено». Всё сохраняется в этом браузере.</p>
+  </header>
+
+  <div class="stats" aria-live="polite">
+    <div><b id="cd">—</b>до релиза 19.11</div>
+    <div><b id="st-total">0</b>шортсов</div>
+    <div><b id="st-shot">0</b>снято</div>
+    <div><b id="st-up">0</b>загружено</div>
+  </div>
+
+  <details class="panel">
+    <summary>Общие настройки (добавляются к каждому шортсу)</summary>
+    <div class="panel-body">
+      <label class="f" for="set-cta">Призыв в конце описания
+        <textarea id="set-cta" rows="2"></textarea></label>
+      <label class="f" for="set-hash">Хэштеги (первые 3 видны над названием)
+        <input type="text" id="set-hash"></label>
+      <label class="f" for="set-tags">Базовые теги, через запятую
+        <input type="text" id="set-tags"></label>
+    </div>
+  </details>
+
+  <details class="panel">
+    <summary>Честные правила для первых дней</summary>
+    <ul class="tips">
+      <li><b>Выключай радио в машине.</b> Музыка на радио лицензированная, и Content ID будет кидать претензии. Это главный риск для шортсов по GTA.</li>
+      <li><b>Скорость важнее идеального монтажа.</b> «Первые 60 секунд» и «графика вблизи» в первые часы выложат тысячи каналов. Через сутки эти темы уже мёртвые.</li>
+      <li><b>Теги на Shorts почти ничего не решают.</b> Решают первые 1–2 секунды ролика и название. Не трать на теги больше 10 секунд.</li>
+      <li><b>Без спойлеров в названии.</b> Сюжетный спойлер в заголовке даёт дизлайки и жалобы.</li>
+      <li><b>3–6 шортсов в день лучше, чем 20 одинаковых.</b> Однотипные ролики подряд каннибализируют друг друга.</li>
+      <li><b>Гайды живут дольше хайпа.</b> «Как заработать деньги», «настройки» и «где найти» будут собирать поиск неделями.</li>
+    </ul>
+  </details>
+
+  <div class="bar" role="toolbar" aria-label="Фильтр">
+    <div id="filters" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    <span class="spacer"></span>
+    <button class="btn" id="hide-done" aria-pressed="false">Скрыть загруженные</button>
+    <button class="btn primary" id="next">Следующий →</button>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    <button class="btn" id="add">+ Свой шортс</button>
+    <button class="btn" id="backup">Скопировать бэкап</button>
+    <button class="btn" id="restore-open">Восстановить из бэкапа</button>
+    <span class="spacer"></span>
+    <span id="reset-zone"><button class="btn" id="reset">Сбросить к шаблону</button></span>
+  </div>
+  <div id="restore-box" hidden class="panel-body">
+    <label class="f" for="restore-in">Вставь бэкап
+      <textarea id="restore-in" rows="4"></textarea></label>
+    <div><button class="btn primary" id="restore-go">Восстановить</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const PHASES=[
+ ["d0","День релиза"],["h1","Первый час"],["world","Мир"],["detail","Физика и детали"],["vs","Сравнения"],["guide","Гайды"],["fun","Мемы и мнение"]];
+const SEED=[
+ ["d0","Запуск игры и твоя живая реакция на первый кадр","Я ЗАПУСТИЛ GTA 6 В ПЕРВЫЙ РАЗ","Наконец-то. Первый запуск GTA 6 без монтажа и без спойлеров. Ждал 13 лет, а ты?","первый запуск gta 6, gta 6 реакция, gta 6 вышла"],
+ ["d0","Экран загрузки консоли: размер игры и время установки","Сколько весит GTA 6 на [PS5/Xbox]? [РАЗМЕР] ГБ","Проверил, сколько места на самом деле занимает GTA 6 и сколько она ставилась. Хватит ли тебе памяти?","сколько весит gta 6, размер gta 6, gta 6 гб, предзагрузка gta 6"],
+ ["d0","Главное меню, музыка в меню, пункты настроек","Главное меню GTA 6 — посмотрите на это","Вот так выглядит главное меню GTA 6. Музыку в меню оценил?","главное меню gta 6, gta 6 меню"],
+ ["d0","Первые секунды после «Новая игра», обрезать до первой сюжетной сцены","Первые 60 секунд GTA 6 (без спойлеров)","Первая минута GTA 6. Сюжет не раскрываю, только первое впечатление.","первые минуты gta 6, начало gta 6, gta 6 без спойлеров"],
+ ["h1","Момент, когда впервые дают управление: бег, камера, машина","Как ощущается управление в GTA 6","Первые минуты с управлением в GTA 6. Стало лучше, чем в пятёрке, или нет? Пиши в комменты.","управление gta 6, геймплей gta 6, gta 6 первый геймплей"],
+ ["h1","Фото-режим или крупный план лица, кожи, одежды, асфальта","Графика GTA 6 вблизи на [PS5]","Приблизил камеру максимально. Графика GTA 6 на [PS5] без фильтров.","графика gta 6, gta 6 графика вблизи, gta 6 ps5"],
+ ["h1","Первый свободный геймплей за Люсию","Люсия в GTA 6 — первый геймплей","Первый раз играю за Люсию. Как тебе первая героиня в GTA за 20 лет?","люсия gta 6, lucia gta 6, gta 6 героиня"],
+ ["h1","Первый свободный геймплей за Джейсона","Джейсон в GTA 6 — первый геймплей","Первый раз играю за Джейсона. Кто тебе больше зашёл: Люсия или Джейсон?","джейсон gta 6, jason gta 6, gta 6 герои"],
+ ["h1","Переключение между героями (только если оно есть в игре)","Как работает переключение героев в GTA 6","Показываю, как в GTA 6 переключаться между Люсией и Джейсоном. Ожидал так?","переключение персонажей gta 6, люсия и джейсон"],
+ ["world","Вертолёт или высокая точка над Вайс-Сити, медленный пролёт","Вайс-Сити в GTA 6 с высоты — масштаб","Поднялся максимально высоко над Вайс-Сити. Масштаб карты GTA 6 вот такой.","вайс сити gta 6, карта gta 6, vice city gta 6"],
+ ["world","Таймер: проезд от края до края карты на быстрой машине","Сколько ехать через всю карту GTA 6? [ВРЕМЯ]","Засёк, сколько ехать через всю карту GTA 6 на [МАШИНА]. В GTA 5 это было около 4 минут.","размер карты gta 6, карта gta 6 больше gta 5"],
+ ["world","Пляж или улица с толпой, NPC занимаются своими делами","NPC в GTA 6 живут своей жизнью","Просто постоял на пляже 5 минут и смотрел на NPC в GTA 6. Это уже не GTA 5.","npc gta 6, детали gta 6, жизнь в gta 6"],
+ ["world","Таймлапс заката или шторм над городом","Закат в GTA 6 — это просто картина","Дождался заката в Вайс-Сити. Погода в GTA 6 вот такая.","закат gta 6, погода gta 6, gta 6 красиво"],
+ ["world","Болото, аллигатор: подойти и посмотреть, что будет","Что будет, если подойти к аллигатору в GTA 6","Решил проверить аллигатора в болотах Леониды. Зря.","аллигатор gta 6, животные gta 6, леонида gta 6"],
+ ["detail","Врезаться на скорости и показать деформацию крупно","Физика аварий в GTA 6 — это жёстко","Разбил машину на скорости [СКОРОСТЬ], чтобы проверить физику повреждений GTA 6.","физика gta 6, аварии gta 6, повреждения машин gta 6"],
+ ["detail","Реакция полиции на 1 звезду: сколько машин, как ищут","Что делает полиция GTA 6 за одну звезду","Получил одну звезду и посмотрел, как работает полиция в GTA 6. Стала умнее?","полиция gta 6, звёзды розыска gta 6, копы gta 6"],
+ ["detail","Мелочь крупным планом: следы шин, мокрая одежда, отражения","Деталь в GTA 6, которую никто не заметил","Rockstar опять сделали то, чего никто не просил. Заметил эту деталь?","детали gta 6, мелочи gta 6, секреты gta 6"],
+ ["detail","Прыжок в воду или езда по воде, брызги, волны","Вода в GTA 6 — лучшая в играх?","Проверил воду в GTA 6: волны, брызги, мокрая одежда. Лучше видел где-нибудь?","вода gta 6, графика gta 6, физика воды"],
+ ["vs","Одно и то же действие в GTA 5 и GTA 6, экран пополам","GTA 6 vs GTA 5 — одно и то же действие","Сделал одно и то же в GTA 5 и GTA 6. Разница за 13 лет вот такая.","gta 6 vs gta 5, сравнение gta 6 и gta 5, gta 6 против gta 5"],
+ ["vs","Кадр из трейлера и та же сцена в игре","Трейлер GTA 6 против реальной игры — обманули?","Нашёл в игре места из трейлера и сравнил. Rockstar не обманули или да?","трейлер gta 6 vs игра, gta 6 даунгрейд, gta 6 трейлер сравнение"],
+ ["vs","Только если есть обе консоли: одна сцена на двух","GTA 6 на [PS5] vs [PS5 Pro/Xbox] — есть разница?","Запустил GTA 6 на двух консолях. Видишь разницу?","gta 6 ps5 pro, gta 6 xbox vs ps5, gta 6 сравнение консолей"],
+ ["guide","Меню настроек: что выключить или поменять (размытие, вибрация, HUD)","Поменяйте эти настройки GTA 6 сразу","Поменяй это в настройках GTA 6 сразу, играть станет приятнее. Сохрани, чтобы не потерять.","настройки gta 6, лучшие настройки gta 6, гайд gta 6"],
+ ["guide","Самый быстрый способ денег, который нашёл в начале","Как быстро заработать деньги в начале GTA 6","Самый быстрый способ денег в начале GTA 6, который я нашёл. Знаешь лучше? Пиши.","деньги gta 6, как заработать деньги gta 6, гайд gta 6"],
+ ["guide","Где найти крутую машину в начале игры, показать путь","Где найти [МАШИНА] в начале GTA 6","Показываю, где забрать [МАШИНА] в самом начале GTA 6. Сохрани.","машины gta 6, где найти машину gta 6, редкие машины gta 6"],
+ ["guide","Лучшее оружие, доступное рано","Лучшее оружие в начале GTA 6 — [ОРУЖИЕ]","Где взять [ОРУЖИЕ] в начале GTA 6 и почему оно лучшее на старте.","оружие gta 6, лучшее оружие gta 6, где найти оружие gta 6"],
+ ["guide","Пасхалка или секретное место","Пасхалка в GTA 6: [ЧТО]","Нашёл пасхалку в GTA 6: [ЧТО]. Где это, показываю в ролике.","пасхалки gta 6, секреты gta 6, easter egg gta 6"],
+ ["guide","Отсылка к старой Vice City 2002 года, если найдёшь","Отсылка к старой Vice City в GTA 6","Rockstar спрятали в GTA 6 отсылку к Vice City 2002 года. Помнишь оригинал?","vice city отсылка gta 6, пасхалки gta 6, gta vice city"],
+ ["fun","Первый смешной баг или кривая физика","Первый баг в GTA 6","Даже Rockstar не идеальны. Первый баг, который я поймал в GTA 6.","баги gta 6, приколы gta 6, gta 6 смешные моменты"],
+ ["fun","Внутриигровые соцсети или ТВ, самые смешные ролики","Соцсети внутри GTA 6 — это шедевр","Залип во внутриигровых соцсетях GTA 6. Rockstar опять высмеяли всех.","соцсети gta 6, юмор gta 6, приколы gta 6"],
+ ["fun","Говорящая голова или голос за кадром: честное мнение","Честно о GTA 6 после [N] часов","Наиграл [N] часов в GTA 6. Честное мнение: что круто, а что разочаровало.","мнение о gta 6, обзор gta 6, стоит ли покупать gta 6"]
+];
+const DEF_SET={cta:"Подпишись, буду выкладывать GTA 6 каждый день.",hash:"#gta6 #гта6 #shorts",tags:"gta 6, гта 6, gta vi, grand theft auto 6, gta 6 shorts, гта 6 шортс"};
+const KEY="gta6-shorts-v1";
+let S;
+function seed(){return {set:{...DEF_SET},items:SEED.map((r,i)=>({id:"s"+(i+1),phase:r[0],idea:r[1],title:r[2],desc:r[3],tags:r[4],st:0}))}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.items)return v}catch(e){}return seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+S=load();
+let filter="all",hideDone=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const holes=s=>(s.match(/\[[^\]]+\]/g)||[]);
+function fullDesc(it){return [it.desc.trim(),S.set.cta.trim(),S.set.hash.trim()].filter(Boolean).join("\n\n")}
+function fullTags(it){const seen=new Set(),out=[];for(const t of (it.tags+","+S.set.tags).split(",")){const k=t.trim();if(k&&!seen.has(k.toLowerCase())){seen.add(k.toLowerCase());out.push(k)}}let s="";for(const t of out){const n=s?s+", "+t:t;if(n.length>480)break;s=n}return s}
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
+function copy(text,label){const h=holes(text);const msg=h.length?`${label} скопировано. Не заполнено: ${h.join(" ")}`:`${label} скопировано`;
+  const done=()=>toast(msg);
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?msg:"Не получилось скопировать: выдели текст вручную")};
+  try{navigator.clipboard.writeText(text).then(done,fallback)}catch(e){fallback()}}
+const STL=["Идея","Снято","Загружено"];
+function renderFilters(){const f=$("filters");f.innerHTML="";[["all","Все"],...PHASES].forEach(([k,l])=>{const b=document.createElement("button");b.className="chip";b.textContent=l;b.setAttribute("aria-pressed",filter===k);b.onclick=()=>{filter=k;renderFilters();render()};f.appendChild(b)})}
+function stats(){$("st-total").textContent=S.items.length;$("st-shot").textContent=S.items.filter(i=>i.st>=1).length;$("st-up").textContent=S.items.filter(i=>i.st===2).length}
+function card(it,n){const ph=(PHASES.find(p=>p[0]===it.phase)||["","Свой"])[1];
+  const el=document.createElement("article");el.className="card"+(it.st===2?" done":"");el.id="c-"+it.id;
+  el.innerHTML=`<div class="head"><span class="num">#${String(n).padStart(2,"0")}</span><span class="phase">${esc(ph)}</span>
+   <button class="status" data-s="${it.st}" title="Сменить статус">${STL[it.st]}</button></div>
+   <p class="idea"><b>Что снять:</b> <span>${esc(it.idea)}</span></p>
+   <div class="titlerow"><label class="f" for="t-${it.id}">Название</label>
+    <input type="text" class="title-in" id="t-${it.id}" maxlength="100" value="${esc(it.title)}">
+    <div class="meta"><span class="holes"></span><span class="cnt"></span></div></div>
+   <div class="copies"><button class="btn primary" data-c="t">Копировать название</button><button class="btn" data-c="d">Описание</button><button class="btn" data-c="g">Теги</button></div>
+   <details><summary>Описание и теги</summary><div class="inner">
+    <label class="f" for="d-${it.id}">Описание (призыв и хэштеги добавятся сами)<textarea id="d-${it.id}" rows="3">${esc(it.desc)}</textarea></label>
+    <label class="f" for="g-${it.id}">Свои теги<input type="text" id="g-${it.id}" value="${esc(it.tags)}"></label>
+    <label class="f" for="i-${it.id}">Что снять<input type="text" id="i-${it.id}" value="${esc(it.idea)}"></label>
+    <div class="meta"><span class="tagcnt"></span><button class="btn" data-del>Удалить</button></div></div></details>`;
+  const ti=el.querySelector(".title-in"),meta=()=>{const l=it.title.length;el.querySelector(".cnt").innerHTML=`<span class="${l>70?"bad":""}">${l}/100</span>`;const h=holes(it.title+" "+it.desc);el.querySelector(".holes").textContent=h.length?"Заполни: "+[...new Set(h)].join(" "):"";el.querySelector(".tagcnt").textContent=`теги: ${fullTags(it).length}/500`};
+  meta();
+  ti.oninput=()=>{it.title=ti.value;meta();save()};
+  el.querySelector("#d-"+it.id).oninput=e=>{it.desc=e.target.value;meta();save()};
+  el.querySelector("#g-"+it.id).oninput=e=>{it.tags=e.target.value;meta();save()};
+  el.querySelector("#i-"+it.id).oninput=e=>{it.idea=e.target.value;el.querySelector(".idea span").textContent=it.idea;save()};
+  el.querySelector('[data-c="t"]').onclick=()=>copy(it.title,"Название");
+  el.querySelector('[data-c="d"]').onclick=()=>copy(fullDesc(it),"Описание");
+  el.querySelector('[data-c="g"]').onclick=()=>copy(fullTags(it),"Теги");
+  el.querySelector(".status").onclick=()=>{it.st=(it.st+1)%3;save();render()};
+  const del=el.querySelector("[data-del]");del.onclick=()=>{if(del.dataset.armed){S.items=S.items.filter(x=>x!==it);save();render()}else{del.dataset.armed=1;del.textContent="Точно удалить?";setTimeout(()=>{delete del.dataset.armed;del.textContent="Удалить"},3000)}};
+  return el}
+function render(){const l=$("list");l.innerHTML="";S.items.forEach((it,i)=>{if(filter!=="all"&&it.phase!==filter)return;if(hideDone&&it.st===2)return;l.appendChild(card(it,i+1))});if(!l.children.length)l.innerHTML='<p class="idea">В этом разделе ничего нет. Выбери другой или добавь свой шортс.</p>';stats()}
+function bindSettings(){[["set-cta","cta"],["set-hash","hash"],["set-tags","tags"]].forEach(([id,k])=>{const e=$(id);e.value=S.set[k];e.oninput=()=>{S.set[k]=e.value;save();render()}})}
+$("next").onclick=()=>{const it=S.items.find(i=>i.st<2);if(!it){toast("Всё загружено");return}filter="all";hideDone=false;$("hide-done").setAttribute("aria-pressed","false");renderFilters();render();const c=$("c-"+it.id);document.querySelectorAll(".card.focus").forEach(x=>x.classList.remove("focus"));c.classList.add("focus");c.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"})};
+$("hide-done").onclick=e=>{hideDone=!hideDone;e.target.setAttribute("aria-pressed",hideDone);e.target.textContent=hideDone?"Показать все":"Скрыть загруженные";render()};
+$("add").onclick=()=>{const id="u"+Date.now();S.items.push({id,phase:filter==="all"?"fun":filter,idea:"Опиши, что снять",title:"Новое название GTA 6",desc:"",tags:"",st:0});save();render();const c=$("c-"+id);if(c){c.scrollIntoView({block:"center"});c.querySelector(".title-in").focus()}};
+$("backup").onclick=()=>copy(JSON.stringify(S),"Бэкап");
+$("restore-open").onclick=()=>{$("restore-box").hidden=!$("restore-box").hidden};
+$("restore-go").onclick=()=>{try{const v=JSON.parse($("restore-in").value);if(!v.items)throw 0;S=v;save();bindSettings();render();$("restore-box").hidden=true;toast("Восстановлено")}catch(e){toast("Это не бэкап из этого инструмента. Скопируй его заново кнопкой «Скопировать бэкап».")}};
+function restoreReset(){$("reset-zone").innerHTML='<button class="btn" id="reset">Сбросить к шаблону</button>';bindReset()}
+function bindReset(){$("reset").onclick=()=>{const z=$("reset-zone");z.innerHTML='<span class="confirm">Все правки пропадут. <button class="btn primary" id="r-yes">Сбросить</button><button class="btn" id="r-no">Отмена</button></span>';$("r-yes").onclick=()=>{S=seed();save();bindSettings();render();restoreReset();toast("Сброшено к шаблону")};$("r-no").onclick=restoreReset}}
+function tick(){const ms=new Date(2026,10,19)-new Date();if(ms<=0){$("cd").textContent="Вышла";return}const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);$("cd").textContent=`${d}д ${h}ч ${m}м`}
+bindSettings();bindReset();renderFilters();render();tick();setInterval(tick,30000);
+</script>
